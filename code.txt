@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap");
+      div.stopper-wrapper {
+        font-family: "Poppins", sans-serif;
+        color: #333;
+        width: 360px;
+        margin: auto;
+      }
+      div.stopper-wrapper div.timer {
+        /* margin-bottom: 24px; */
+      }
+      div.stopper-wrapper div.timer #time {
+        font-size: 56px;
+        font-weight: 500;
+      }
+      div.stopper-wrapper div.timer #round {
+        font-weight: 300;
+        font-size: 24px;
+      }
+      div.stopper-wrapper div.controls {
+        display: flex;
+      }
+      div.stopper-wrapper div.controls button {
+        width: 64px;
+        height: 64px;
+        appearance: none;
+        display: block;
+        border: none;
+        border-radius: 500px;
+        cursor: pointer;
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 12px;
+        font-family: "Poppins", sans-serif;
+        margin-right: 24px;
+        background: #f4f4f4;
+      }
+      div.stopper-wrapper div.controls button.start {
+        color: #08c65d;
+        background-color: rgba(12, 245, 116, 0.2);
+      }
+      div.stopper-wrapper div.controls button.reset {
+        color: #ec0053;
+        background-color: rgba(255, 32, 110, 0.2);
+      }
+      div.stopper-wrapper div#splits {
+        margin-top: 24px;
+      }
+      div.stopper-wrapper div#splits div.split {
+        display: flex;
+        font-size: 16px;
+        width: 100%;
+        align-items: center;
+        cursor: pointer;
+      }
+      div.stopper-wrapper div#splits div.split:not(:last-child) {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(51, 51, 51, 0.2);
+      }
+      div.stopper-wrapper div#splits div.split div.index {
+        margin-right: 12px;
+        font-weight: 500;
+      }
+      div.stopper-wrapper div#splits div.split span {
+        opacity: 0.8;
+      }
+      div.stopper-wrapper div#splits div.split a {
+        opacity: 0;
+        margin-left: auto;
+        font-size: 14px;
+        font-weight: 500;
+        text-transform: uppercase;
+        transition: 120ms;
+      }
+      div.stopper-wrapper div#splits div.split:hover a {
+        opacity: 1;
+      }
+      div.input {
+        margin-bottom: 12px;
+      }
+      div.input label {
+        font-size: 14px;
+        font-weight: 500;
+        opacity: 0.6;
+      }
+      div.input input {
+        display: block;
+        appearance: none;
+        border: none;
+        outline: none;
+        padding: 8px 16px;
+        background: #f4f4f4;
+        border-radius: 4px;
+        margin-top: 4px;
+        font-family: inherit;
+        font-size: 16px;
+        font-weight: 500;
+        color: #333;
+        width: 100%;
+      }
+    </style>
+    <div class="stopper-wrapper">
+      <div class="timer">
+        <div class="input">
+          <label for="input">Timer duration</label>
+          <input
+            type="text"
+            id="input"
+            placeholder="Enter duration"
+            value="1m 0s"
+          />
+        </div>
+        <span id="time">00:00:00</span>
+      </div>
+      <div class="controls">
+        <button class="start regular" id="start">
+          <span style="pointer-events: none">Start</span>
+        </button>
+        <button class="reset" id="reset">Reset</button>
+      </div>
+      <div id="splits"></div>
+    </div>
+    <script>
+      const n = (t, s, n) => `
+        <div class="split" onClick="onRecordStart(${n})">
+          <div class="index">#${t + 1}</div>
+          <span class="tile">${s}</span>
+          <a>Continue</a>
+        </div>
+      `;
+      const c = (t, s = 2) => `00000000${t}`.slice(-s);
+      const e = (t) => {
+        if (typeof t != "string") return typeof t === "number";
+        return !isNaN(t) && !isNaN(parseFloat(t));
+      };
+      const o = (t) => {
+        let s = 0;
+        const n = t.match(/(\d+)\s*d/);
+        const e = t.match(/(\d+)\s*h/);
+        const o = t.match(/(\d+)\s*m/);
+        const c = t.match(/(\d+)\s*s/);
+        if (n) s += parseInt(n[1]) * 86400;
+        if (e) s += parseInt(e[1]) * 3600;
+        if (o) s += parseInt(o[1]) * 60;
+        if (c) s += parseInt(c[1]);
+        return s;
+      };
+      let r = false;
+      let a = 0;
+      let i = 0;
+      let t = [];
+      let l = 60 * 1e3;
+      let d = 60 * 1e3;
+      const s = document.querySelector("#time");
+      const u = document.querySelector("#reset");
+      const f = document.querySelector("#start");
+      const p = document.querySelector("#input");
+      const m = document.querySelector("#splits");
+      const S = () => {
+        r = !r;
+        if (r) h();
+        else {
+          l = d;
+        }
+      };
+      const N = (t) => {
+        l = t;
+        a = 0;
+        r = true;
+        h();
+      };
+      const $ = () => {
+        const t = JSON.parse(localStorage.getItem("@records") || "[]");
+        t.unshift(l - a);
+        localStorage.setItem("@records", JSON.stringify(t.slice(0, 10)));
+        M();
+      };
+      const g = () => {
+        r = false;
+        $();
+        requestAnimationFrame(() => {
+          let t = o(p.value);
+          if (e(p.value)) t = p.value * 60;
+          l = t * 1e3;
+          a = 0;
+          M();
+          J();
+        });
+      };
+      const h = () => {
+        i = window.performance.now();
+        v();
+      };
+      const v = () => {
+        if (r) requestAnimationFrame(v);
+        f.children[0].innerText = r ? "Pause" : "Start";
+        f.className = r ? "start running" : "start regular";
+        const t = window.performance.now();
+        const s = t - i;
+        a += s;
+        i = t;
+        F();
+      };
+      const w = (t) => {
+        const s = t;
+        const n = s / 1e3;
+        const e = n / 60;
+        const o = e / 60;
+        return `${c(Math.floor(o))}:${c(Math.floor(e % 60))}:${c(
+          Math.floor(n % 60)
+        )}`;
+      };
+      const I = () => {
+        t.unshift(a);
+        F();
+      };
+      let k;
+      const F = () => {
+        const t = Date.now();
+        if (k + 20 > t) return;
+        s.innerText = w(l - a);
+        k = t;
+      };
+      const J = (t) => {
+        s.innerText = w(l);
+      };
+      const M = () => {
+        const t = JSON.parse(localStorage.getItem("@records") || "[]");
+        const s = [...t];
+        m.innerHTML = s.map((t, s) => n(s, w(t || 0), t)).join("");
+      };
+      const O = (t) => {
+        let s = o(t.target.value);
+        if (e(t.target.value)) s = t.target.value * 60;
+        d = s * 1e3;
+        if (!r) l = s * 1e3;
+        F();
+      };
+      M();
+      F();
+      f.addEventListener("click", S);
+      u.addEventListener("click", g);
+      p.addEventListener("input", O);
+    </script>
+  </body>
+</html>
